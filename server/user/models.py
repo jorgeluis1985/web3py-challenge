@@ -6,6 +6,9 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 import base64, requests, subprocess
+from web3 import Web3
+
+w3 = Web3(Web3.HTTPProvider('https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'))
 
 
 class UserManager(BaseUserManager):
@@ -43,6 +46,7 @@ class User(AbstractBaseUser):
     email = models.EmailField(null=False, blank=False, unique=True)
     first_name = models.CharField(max_length=50, blank=False, null=False, default='Default first name')
     last_name = models.CharField(max_length=50, blank=False, null=False, default='Default last name')
+    wallet_address = models.CharField(max_length=50, null=True)
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -54,6 +58,13 @@ class User(AbstractBaseUser):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
+
+    @property
+    def balance(self):
+        balance = w3.eth.get_balance(self.wallet_address)
+        ether_balance = w3.from_wei(balance, 'ether')
+
+        return ether_balance
 
     def __str__(self):
         return self.email
